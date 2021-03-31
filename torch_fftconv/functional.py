@@ -88,7 +88,9 @@ def _fft_convnd(input: Tensor,
     # handle dilation
     # handle dilation for last dim
     if dilation[-1] > 1:
-        W_neg_freq = W.flip(-1).conj()[..., 1:]
+        W_neg_freq = W.flip(-1)[..., 1:]
+        W_neg_freq.imag.mul_(-1)
+
         tmp = [W]
         for i in range(1, dilation[-1]):
             if i % 2:
@@ -101,10 +103,13 @@ def _fft_convnd(input: Tensor,
     if len(weight_s) > 1:
         W = fftn(W, s=weight_s[:-1], dim=tuple(range(2, W.ndim - 1)))
         repeats = (1, 1) + dilation[:-1] + (1,)
+        W.imag.mul_(-1)
         if sum(repeats) > W.ndim:
             W = W.repeat(*repeats)
+    else:
+        W.imag.mul_(-1)
 
-    Y = _complex_matmul(X, W.conj(), groups)
+    Y = _complex_matmul(X, W, groups)
 
     # handle stride
     if len(stride) > 1:
