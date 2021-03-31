@@ -131,9 +131,7 @@ def _fft_convnd(input: Tensor,
 
         offset = Y.size(-1) % step_size
         if offset > 1:
-            Y = F.pad(Y, [0, step_size - offset])
-
-        #print(Y.shape, strided_Y_size, pad_size)
+            Y = F.pad(Y, [0, strided_Y_size - offset])
 
         unfolded_Y_real = Y.real.unfold(-1, strided_Y_size, step_size)
         unfolded_Y_imag = Y.imag.unfold(-1, strided_Y_size, step_size)
