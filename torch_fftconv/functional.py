@@ -74,9 +74,7 @@ def _fft_convnd(input: Tensor,
 
         # find s size that can be divided by stride and dilation
         rfft_even = 2 if i == len(stride) - 1 else 1
-        factor = _lcm(st, rfft_even)
-        if d > 1:
-            factor = _lcm(factor, d * rfft_even)
+        factor = _lcm(st * rfft_even, d * rfft_even)
 
         offset = s_size % factor
         if offset:
@@ -126,11 +124,31 @@ def _fft_convnd(input: Tensor,
         Y = ifftn(Y, dim=tuple(range(2, Y.ndim - 1)))
 
     if stride[-1] > 1:
-        Y = torch.cat((Y, Y.flip(-1)[..., 1:-1].conj()), dim=-1)
-        Y_strided = Y.view(*Y.shape[:-1], stride[-1], -1).mean(-2)
-        output = ifft(Y_strided).real
-    else:
-        output = irfft(Y)
+        n_fft = Y.size(-1) * 2 - 2
+        new_n_fft = n_fft // stride[-1]
+        step_size = new_n_fft // 2
+        strided_Y_size = step_size + 1
+
+        offset = Y.size(-1) % step_size
+        if offset > 1:
+            Y = F.pad(Y, [0, step_size - offset])
+
+        #print(Y.shape, strided_Y_size, pad_size)
+
+        unfolded_Y_real = Y.real.unfold(-1, strided_Y_size, step_size)
+        unfolded_Y_imag = Y.imag.unfold(-1, strided_Y_size, step_size)
+        Y_pos_real, Y_pos_imag = unfolded_Y_real[..., ::2,
+                                                 :].sum(-2), unfolded_Y_imag[..., ::2, :].sum(-2)
+        Y_neg_real, Y_neg_imag = unfolded_Y_real[..., 1::2, :].sum(
+            -2).flip(-1), unfolded_Y_imag[..., 1::2, :].sum(-2).flip(-1)
+
+        Y_real = Y_pos_real.add_(Y_neg_real)
+        Y_imag = Y_pos_imag.add_(Y_neg_imag, alpha=-1)
+
+        Y = torch.view_as_complex(
+            torch.stack((Y_real, Y_imag), -1)).div_(stride[-1])
+
+    output = irfft(Y)
 
     # Remove extra padded values
     index = (slice(None),) * 2 + tuple(slice(l) for l in output_size)
