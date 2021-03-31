@@ -122,6 +122,8 @@ def _fft_convnd(input: Tensor,
         if len(sum_dims):
             Y = Y.view(*unfold_shape).mean(sum_dims)
         Y = ifftn(Y, dim=tuple(range(2, Y.ndim - 1)))
+        Y = Y.as_strided(
+            Y.shape[:2] + output_size[:-1] + Y.shape[-1:], Y.stride())
 
     if stride[-1] > 1:
         n_fft = Y.size(-1) * 2 - 2
@@ -129,12 +131,13 @@ def _fft_convnd(input: Tensor,
         step_size = new_n_fft // 2
         strided_Y_size = step_size + 1
 
-        offset = Y.size(-1) % step_size
-        if offset > 1:
+        offset = (Y.size(-1) - 1) % step_size
+        if offset:
             Y = F.pad(Y, [0, strided_Y_size - offset])
 
         unfolded_Y_real = Y.real.unfold(-1, strided_Y_size, step_size)
-        unfolded_Y_imag = Y.imag.unfold(-1, strided_Y_size, step_size)
+        unfolded_Y_imag = Y.imag[...,
+                                 1:].unfold(-1, strided_Y_size - 2, step_size)
         Y_pos_real, Y_pos_imag = unfolded_Y_real[..., ::2,
                                                  :].sum(-2), unfolded_Y_imag[..., ::2, :].sum(-2)
         Y_neg_real, Y_neg_imag = unfolded_Y_real[..., 1::2, :].sum(
@@ -142,6 +145,7 @@ def _fft_convnd(input: Tensor,
 
         Y_real = Y_pos_real.add_(Y_neg_real)
         Y_imag = Y_pos_imag.add_(Y_neg_imag, alpha=-1)
+        Y_imag = F.pad(Y_imag, [1, 1])
 
         Y = torch.view_as_complex(
             torch.stack((Y_real, Y_imag), -1)).div_(stride[-1])
@@ -149,8 +153,7 @@ def _fft_convnd(input: Tensor,
     output = irfft(Y)
 
     # Remove extra padded values
-    index = (slice(None),) * 2 + tuple(slice(l) for l in output_size)
-    output = output[index].contiguous()
+    output = output[..., :output_size[-1]].contiguous()
 
     # Optionally, add a bias term before returning.
     if bias is not None:
