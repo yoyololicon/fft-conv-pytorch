@@ -113,22 +113,13 @@ def _fft_convnd(input: Tensor,
 
     # handle stride
     if len(stride) > 1:
-        unfold_shape = [Y.size(0), Y.size(1)]
-        sum_dims: List[int] = []
         for i, st in enumerate(stride[:-1]):
-            if st == 1:
-                unfold_shape.append(Y.size(i + 2))
-                continue
-            step = Y.size(i + 2) // st
-            unfold_shape += [st, step]
-            sum_dims.append(len(unfold_shape) - 2)
+            if st > 1:
+                Y = Y.reshape(*Y.shape[:i+2], st, -1, *Y.shape[i+3:]).mean(i+2)
 
-        unfold_shape.append(-1)
-        if len(sum_dims):
-            Y = Y.view(*unfold_shape).mean(sum_dims)
-        Y = ifftn(Y, dim=tuple(range(2, Y.ndim - 1)))
-        Y = Y.as_strided(
-            Y.shape[:2] + output_size[:-1] + Y.shape[-1:], Y.stride())
+            Y = ifft(Y, dim=i+2)
+            Y = Y.as_strided(
+                Y.shape[:i+2] + output_size[i:i+1] + Y.shape[i+3:], Y.stride())
 
     if stride[-1] > 1:
         n_fft = Y.size(-1) * 2 - 2
