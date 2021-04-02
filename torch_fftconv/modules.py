@@ -7,7 +7,7 @@ from .functional import *
 
 
 __all__ = [
-    'FFTConv1d', 'FFTConv2d', 'FFTConv3d',
+    'FFTConv1d', 'FFTConv2d', 'FFTConv3d', 'FFTConvTranspose1d', 'FFTConvTranspose2d', 'FFTConvTranspose3d'
 ]
 
 

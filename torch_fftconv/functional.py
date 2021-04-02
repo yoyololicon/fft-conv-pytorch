@@ -2,13 +2,13 @@ import torch
 from torch import Tensor
 from torch.nn.modules.utils import _single, _pair, _triple, _reverse_repeat_tuple
 import torch.nn.functional as F
-from torch.fft import rfft, fftn, rfftn, ifft, irfft, ifftn
+from torch.fft import rfft, fftn, rfftn, ifft, irfft, ifftn, irfftn
 
 from typing import List, Optional, Union, Tuple
 from math import gcd
 
 __all__ = [
-    'fft_conv1d', 'fft_conv2d', 'fft_conv3d', 'fft_conv_transpose1d'
+    'fft_conv1d', 'fft_conv2d', 'fft_conv3d', 'fft_conv_transpose1d', 'fft_conv_transpose2d', 'fft_conv_transpose3d'
 ]
 
 
@@ -248,7 +248,7 @@ def _fft_conv_transposend(input: Tensor,
 
     Y = _complex_matmul(X, W, groups, True)
 
-    output = irfft(Y)
+    output = irfftn(Y, dim=tuple(range(2, Y.ndim)))
 
     # Remove extra padded values
     index = (slice(None),) * 2 + tuple(slice(p, o + p)
