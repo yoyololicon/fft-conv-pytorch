@@ -34,3 +34,9 @@ fft_conv.weight = torch.nn.Parameter(kernel)
 fft_conv.bias = torch.nn.Parameter(bias)
 out = fft_conv1d(signal)
 ```
+
+## TODO
+
+- [ ] Jittability.
+- [x] Dilated Convolution.
+- [x] Transposed Convolution.
