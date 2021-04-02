@@ -16,7 +16,7 @@ def _lcm(x: int, y: int):
     return abs(x * y) // gcd(x, y)
 
 
-def _complex_matmul(a: Tensor, b: Tensor, groups: int = 1, transpose=False) -> Tensor:
+def _complex_matmul(a: Tensor, b: Tensor, groups: int = 1, transpose: bool = False) -> Tensor:
     """Multiplies two complex-valued tensors."""
     # Scalar matrix multiplication of two tensors, over only the first channel
     # dimensions. Dimensions 3 and higher will have the same shape after multiplication.
