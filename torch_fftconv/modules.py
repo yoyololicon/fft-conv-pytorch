@@ -56,8 +56,6 @@ class FFTConvTranspose1d(nn.ConvTranspose1d):
             output_padding, self.groups, self.dilation)
 
 
-
-
 class FFTConvTranspose2d(nn.ConvTranspose2d):
     def forward(self, input: Tensor, output_size: Optional[List[int]] = None) -> Tensor:
         if self.padding_mode != 'zeros':
@@ -71,7 +69,6 @@ class FFTConvTranspose2d(nn.ConvTranspose2d):
         return fft_conv_transpose2d(
             input, self.weight, self.bias, self.stride, self.padding,
             output_padding, self.groups, self.dilation)
-
 
 
 class FFTConvTranspose3d(nn.ConvTranspose3d):
