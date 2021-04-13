@@ -37,6 +37,14 @@ fft_conv.bias = torch.nn.Parameter(bias)
 out = fft_conv1d(signal)
 ```
 
+## Benchmarks
+
+The best situation to use `FFTConv` is when using large size kernel. The following image shows that when the size of input is fixed, the fft method remains an almost constant cost among all size of kernel, regardless.
+
+![](images/benchmark_kernel.png)
+
+For details and benchmarks on other parameters, check [this notebook](benchmark.ipynb).
+
 ## TODO
 
 - [ ] Jittability.
