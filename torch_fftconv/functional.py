@@ -22,25 +22,18 @@ def _complex_matmul(a: Tensor, b: Tensor, groups: int = 1, transpose: bool = Fal
     # dimensions. Dimensions 3 and higher will have the same shape after multiplication.
     # We also allow for "grouped" multiplications, where multiple sections of channels
     # are multiplied independently of one another (required for group convolutions).
-    a = a.view(a.size(0), groups, -1, *a.shape[2:])
+    a = a.view(a.size(0), groups, -1, *a.shape[2:], 1)
     b = b.view(groups, -1, *b.shape[1:])
+    a = torch.movedim(a, 2, a.dim() - 1)
+
     if transpose:
-        expr = "agc..., gcb... -> agb..."
+        b = torch.movedim(b, (1, 2), (b.dim() - 2, b.dim() - 1))
     else:
-        expr = "agc..., gbc... -> agb..."
+        b = torch.movedim(b, (1, 2), (b.dim() - 1, b.dim() - 2))
 
-    # Compute the real and imaginary parts independently, then manually insert them
-    # into the output Tensor.  This is fairly hacky but necessary for PyTorch 1.7.0,
-    # because Autograd is not enabled for complex matrix operations yet.  Not exactly
-    # idiomatic PyTorch code, but it should work for all future versions (>= 1.7.0).
-    real = torch.einsum(expr, a.real, b.real) - \
-        torch.einsum(expr, a.imag, b.imag)
-    imag = torch.einsum(expr, a.imag, b.real) + \
-        torch.einsum(expr, a.real, b.imag)
-
-    c = torch.view_as_complex(torch.stack((real, imag), -1))
-
-    return c.view(c.size(0), -1, *c.shape[3:])
+    c = a @ b
+    c = torch.movedim(c, c.dim() - 1, 2)
+    return c.reshape(c.size(0), -1, *c.shape[3:-1])
 
 
 def _conv_shape(L_in: Tuple[int],
