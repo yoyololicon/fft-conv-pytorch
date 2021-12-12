@@ -5,6 +5,9 @@ from torch_fftconv.modules import *
 import pytest
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+if torch.cuda.is_available():
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.backends.cudnn.allow_tf32 = False
 
 
 @pytest.mark.parametrize('batch', [1, 4])
@@ -157,7 +160,6 @@ def test_conv_transpose2d(batch, length,
     assert torch.allclose(
         y1, y2, atol=1e-5, rtol=1e-5), torch.abs(y1 - y2).max().item()
     y2.sum().backward()
-
 
 
 @pytest.mark.parametrize('batch', [2])
