@@ -1,6 +1,6 @@
 import torch
 from torch import Tensor
-from torch.nn.modules.utils import _single, _pair, _triple, _reverse_repeat_tuple
+from torch.nn.modules.utils import _single, _pair, _triple
 import torch.nn.functional as F
 from torch.fft import rfft, fftn, rfftn, ifft, irfft, ifftn, irfftn
 
@@ -10,6 +10,19 @@ from math import gcd
 __all__ = [
     'fft_conv1d', 'fft_conv2d', 'fft_conv3d', 'fft_conv_transpose1d', 'fft_conv_transpose2d', 'fft_conv_transpose3d'
 ]
+
+
+def _reverse_repeat_tuple(t: List[int], n: int) -> List[int]:
+    r"""Reverse the order of `t` and repeat each element for `n` times.
+
+    This can be used to translate padding arg used by Conv and Pooling modules
+    to the ones used by `F.pad`.
+    """
+    out: List[int] = []
+    for i in range(len(t) - 1, -1, -1):
+        x = t[i]
+        out += [x] * n
+    return out
 
 
 def _lcm(x: int, y: int):
@@ -22,8 +35,8 @@ def _complex_matmul(a: Tensor, b: Tensor, groups: int = 1, transpose: bool = Fal
     # dimensions. Dimensions 3 and higher will have the same shape after multiplication.
     # We also allow for "grouped" multiplications, where multiple sections of channels
     # are multiplied independently of one another (required for group convolutions).
-    a = a.view(a.size(0), groups, -1, *a.shape[2:], 1)
-    b = b.view(groups, -1, *b.shape[1:])
+    a = a.view((a.size(0), groups, -1) + a.shape[2:] + (1,))
+    b = b.view((groups, -1) + b.shape[1:])
     a = torch.movedim(a, 2, a.dim() - 1)
 
     if transpose:
@@ -33,22 +46,24 @@ def _complex_matmul(a: Tensor, b: Tensor, groups: int = 1, transpose: bool = Fal
 
     c = a @ b
     c = torch.movedim(c, c.dim() - 1, 2)
-    return c.reshape(c.size(0), -1, *c.shape[3:-1])
+    return c.reshape((c.size(0), -1) + c.shape[3:-1])
 
 
-def _conv_shape(L_in: Tuple[int],
-                kernel: Tuple[int],
-                stride: Tuple[int],
-                padding: Tuple[int],
-                dilation: Tuple[int]) -> Tuple[int]:
+def _conv_shape(L_in: List[int],
+                kernel: List[int],
+                stride: List[int],
+                padding: List[int],
+                dilation: List[int]) -> List[int]:
 
     L_out: List[int] = []
-    for l, k, s, p, d in zip(L_in, kernel, stride, padding, dilation):
-        out = (l + 2 * p - d * (k - 1) - 1) // s + 1
+    for i in range(len(L_in)):
+        out = (L_in[i] - 1) * stride[i] - 2 * padding[i] + \
+            dilation[i] * (kernel[i] - 1) + 1
+        # out = (l + 2 * p - d * (k - 1) - 1) // s + 1
         assert out > 0, "Kernel size can't be greater than input."
         L_out.append(out)
 
-    return tuple(L_out)
+    return L_out
 
 
 def _conv_transpose_shape(L_in: Tuple[int],
@@ -70,9 +85,9 @@ def _conv_transpose_shape(L_in: Tuple[int],
 def _fft_convnd(input: Tensor,
                 weight: Tensor,
                 bias: Optional[Tensor],
-                stride: Tuple[int],
-                padding: Tuple[int],
-                dilation: Tuple[int],
+                stride: List[int],
+                padding: List[int],
+                dilation: List[int],
                 groups: int) -> Tensor:
 
     output_size = _conv_shape(input.shape[2:], weight.shape[2:],
@@ -82,7 +97,11 @@ def _fft_convnd(input: Tensor,
 
     s: List[int] = []
     weight_s: List[int] = []
-    for i, (x_size, w_size, d, st) in enumerate(zip(padded_input.shape[2:], weight.shape[2:], dilation, stride)):
+    for i in range(len(dilation)):
+        x_size = padded_input.shape[2 + i]
+        w_size = weight.shape[2 + i]
+        d = dilation[i]
+        st = stride[i]
         s_size = max(x_size, w_size * d)
 
         # find s size that can be divided by stride and dilation
@@ -114,11 +133,11 @@ def _fft_convnd(input: Tensor,
         W = torch.cat(tmp, -1)
 
     if len(weight_s) > 1:
-        W = fftn(W, s=weight_s[:-1], dim=tuple(range(2, W.ndim - 1)))
+        W = fftn(W, s=weight_s[:-1], dim=list(range(2, W.ndim - 1)))
         repeats = (1, 1) + dilation[:-1] + (1,)
         W.imag.mul_(-1)
         if sum(repeats) > W.ndim:
-            W = W.repeat(*repeats)
+            W = W.repeat(repeats)
     else:
         W.imag.mul_(-1)
 
@@ -128,11 +147,15 @@ def _fft_convnd(input: Tensor,
     if len(stride) > 1:
         for i, st in enumerate(stride[:-1]):
             if st > 1:
-                Y = Y.reshape(*Y.shape[:i+2], st, -1, *Y.shape[i+3:]).mean(i+2)
+                tmp = Y.shape[:i+2] + (st, -1) + Y.shape[i+3:]
+                Y = Y.reshape(tmp).mean(i+2)
 
             Y = ifft(Y, dim=i+2)
+            Y_stride: List[int] = []
+            for j in range(len(Y.shape)):
+                Y_stride.append(Y.stride(j))
             Y = Y.as_strided(
-                Y.shape[:i+2] + output_size[i:i+1] + Y.shape[i+3:], Y.stride())
+                Y.shape[:i+2] + output_size[i:i+1] + Y.shape[i+3:], Y_stride)
 
     if stride[-1] > 1:
         n_fft = Y.size(-1) * 2 - 2
@@ -162,7 +185,7 @@ def _fft_convnd(input: Tensor,
 
     # Optionally, add a bias term before returning.
     if bias is not None:
-        output += bias[(slice(None),) + (None,) * (output.ndim - 2)]
+        output += bias[:, None]
 
     return output
 

@@ -32,6 +32,7 @@ def test_conv1d(batch, length,
     fft_conv = FFTConv1d(in_channels, out_channels, kernel_size,
                          stride, padding, dilation, groups, bias, padding_mode).to(device)
     fft_conv.load_state_dict(conv.state_dict())
+    fft_conv = torch.jit.script(fft_conv)
 
     y1 = conv(x)
     y2 = fft_conv(x)
