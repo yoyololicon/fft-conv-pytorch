@@ -1,14 +1,20 @@
+from os import name
 import setuptools
-from torch_fftconv import __version__, __email__, name, __maintainer__
+
+NAME = "torch_fftconv"
+VERSION = '0.1.2'
+MAINTAINER = 'Chin-Yun Yu'
+EMAIL = 'lolimaster.cs03@nctu.edu.tw'
+
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name=name,
-    version=__version__,
-    author=__maintainer__,
-    author_email=__email__,
+    name=NAME,
+    version=VERSION,
+    author=MAINTAINER,
+    author_email=EMAIL,
     description="Implementation of 1D, 2D, and 3D FFT convolutions in PyTorch. Much faster than direct convolutions for large kernel sizes",
     long_description=long_description,
     long_description_content_type="text/markdown",
