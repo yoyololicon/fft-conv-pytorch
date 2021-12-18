@@ -1,6 +1,8 @@
 # FFT Conv PyTorch
 
 [![Python package](https://github.com/yoyololicon/fft-conv-pytorch/actions/workflows/python-package.yml/badge.svg?branch=master)](https://github.com/yoyololicon/fft-conv-pytorch/actions/workflows/python-package.yml)
+[![Upload Python Package](https://github.com/yoyololicon/fft-conv-pytorch/actions/workflows/python-publish.yml/badge.svg)](https://github.com/yoyololicon/fft-conv-pytorch/actions/workflows/python-publish.yml)
+[![PyPI version](https://badge.fury.io/py/torch-fftconv.svg)](https://badge.fury.io/py/torch-fftconv)
 
 This is a fork of original [fft-conv-pytorch](https://github.com/fkodom/fft-conv-pytorch).
 I made some modifications to support dilated and strided convolution, so it can be a drop-in-replacement of original PyTorch `Conv*d` modules and `conv*d` functions, with the same function parameters and behavior.
