@@ -3,6 +3,7 @@ from torch.nn import Conv1d, Conv2d, Conv3d, ConvTranspose1d, ConvTranspose2d, C
 from torch_fftconv.modules import *
 
 import pytest
+from itertools import product
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 if torch.cuda.is_available():
@@ -50,7 +51,7 @@ def test_conv1d(batch, length,
 @pytest.mark.parametrize('padding', [0, 7])
 @pytest.mark.parametrize('bias', [True, False])
 @pytest.mark.parametrize('groups', [1, 2])
-@pytest.mark.parametrize('padding_mode', ['zeros', 'reflect'])
+@pytest.mark.parametrize('padding_mode', ['zeros', 'circular'])
 def test_conv2d(batch, length,
                 in_channels, out_channels,
                 kernel_size, stride, padding, dilation, groups, bias, padding_mode):
@@ -105,10 +106,9 @@ def test_conv3d(batch, length,
 @pytest.mark.parametrize('out_channels', [8, 32])
 @pytest.mark.parametrize('length', [409])
 @pytest.mark.parametrize('kernel_size', [128, 256])
-@pytest.mark.parametrize('stride', [1, 3, 4])
-@pytest.mark.parametrize('dilation', [1, 2, 4])
+@pytest.mark.parametrize('stride,dilation,output_padding',
+                         [x + (0,) for x in product([1, 3, 4], [1, 2, 4])] + [x + (1,) for x in product([3, 4], [2, 4])])
 @pytest.mark.parametrize('padding', [0, 3])
-@pytest.mark.parametrize('output_padding', [0])
 @pytest.mark.parametrize('bias', [True, False])
 @pytest.mark.parametrize('groups', [1, 4])
 @pytest.mark.parametrize('padding_mode', ['zeros'])
@@ -136,10 +136,9 @@ def test_conv_transpose1d(batch, length,
 @pytest.mark.parametrize('out_channels', [4, 16])
 @pytest.mark.parametrize('length', [(31, 31)])
 @pytest.mark.parametrize('kernel_size', [17, 23])
-@pytest.mark.parametrize('stride', [1, 2, 3])
-@pytest.mark.parametrize('dilation', [1, 2, 3])
 @pytest.mark.parametrize('padding', [0, 7])
-@pytest.mark.parametrize('output_padding', [0])
+@pytest.mark.parametrize('stride,dilation,output_padding',
+                         [x + (0,) for x in product([1, 2, 3], [1, 2, 3])] + [x + (1,) for x in product([2, 3], [2, 3])])
 @pytest.mark.parametrize('bias', [True, False])
 @pytest.mark.parametrize('groups', [1, 2])
 @pytest.mark.parametrize('padding_mode', ['zeros'])
@@ -167,10 +166,9 @@ def test_conv_transpose2d(batch, length,
 @pytest.mark.parametrize('out_channels', [8])
 @pytest.mark.parametrize('length', [(29, 23, 23)])
 @pytest.mark.parametrize('kernel_size', [9, 11])
-@pytest.mark.parametrize('stride', [1, 2, 3])
-@pytest.mark.parametrize('dilation', [1, 2, 3])
 @pytest.mark.parametrize('padding', [6])
-@pytest.mark.parametrize('output_padding', [0])
+@pytest.mark.parametrize('stride,dilation,output_padding',
+                         [x + (0,) for x in product([1, 2, 3], [1, 2, 3])] + [x + (1,) for x in product([2, 3], [2, 3])])
 @pytest.mark.parametrize('bias', [True, False])
 @pytest.mark.parametrize('groups', [1, 2])
 @pytest.mark.parametrize('padding_mode', ['zeros'])
