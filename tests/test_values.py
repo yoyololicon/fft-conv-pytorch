@@ -1,6 +1,7 @@
 import torch
 from torch.nn import Conv1d, Conv2d, Conv3d, ConvTranspose1d, ConvTranspose2d, ConvTranspose3d
 from torch_fftconv.modules import *
+from torch_fftconv.utils import convert_fft_conv
 
 import pytest
 from itertools import product
@@ -30,9 +31,8 @@ def test_conv1d(batch, length,
                     requires_grad=True, device=device)
     conv = Conv1d(in_channels, out_channels, kernel_size, stride,
                   padding, dilation, groups, bias, padding_mode).to(device)
-    fft_conv = FFTConv1d(in_channels, out_channels, kernel_size,
-                         stride, padding, dilation, groups, bias, padding_mode).to(device)
-    fft_conv.load_state_dict(conv.state_dict())
+    fft_conv = convert_fft_conv(conv)
+    assert isinstance(fft_conv, FFTConv1d)
 
     y1 = conv(x)
     y2 = fft_conv(x)
@@ -60,9 +60,8 @@ def test_conv2d(batch, length,
                     requires_grad=True, device=device)
     conv = Conv2d(in_channels, out_channels, kernel_size, stride,
                   padding, dilation, groups, bias, padding_mode).to(device)
-    fft_conv = FFTConv2d(in_channels, out_channels, kernel_size,
-                         stride, padding, dilation, groups, bias, padding_mode).to(device)
-    fft_conv.load_state_dict(conv.state_dict())
+    fft_conv = convert_fft_conv(conv)
+    assert isinstance(fft_conv, FFTConv2d)
 
     y1 = conv(x)
     y2 = fft_conv(x)
@@ -90,9 +89,8 @@ def test_conv3d(batch, length,
                     requires_grad=True, device=device)
     conv = Conv3d(in_channels, out_channels, kernel_size, stride,
                   padding, dilation, groups, bias, padding_mode).to(device)
-    fft_conv = FFTConv3d(in_channels, out_channels, kernel_size,
-                         stride, padding, dilation, groups, bias, padding_mode).to(device)
-    fft_conv.load_state_dict(conv.state_dict())
+    fft_conv = convert_fft_conv(conv)
+    assert isinstance(fft_conv, FFTConv3d)
 
     y1 = conv(x)
     y2 = fft_conv(x)
@@ -120,9 +118,8 @@ def test_conv_transpose1d(batch, length,
                     requires_grad=True, device=device)
     conv = ConvTranspose1d(in_channels, out_channels, kernel_size, stride,
                            padding, output_padding, groups, bias, dilation, padding_mode).to(device)
-    fft_conv = FFTConvTranspose1d(in_channels, out_channels, kernel_size,
-                                  stride, padding, output_padding, groups, bias, dilation, padding_mode).to(device)
-    fft_conv.load_state_dict(conv.state_dict())
+    fft_conv = convert_fft_conv(conv)
+    assert isinstance(fft_conv, FFTConvTranspose1d)
 
     y1 = conv(x)
     y2 = fft_conv(x)
@@ -150,9 +147,8 @@ def test_conv_transpose2d(batch, length,
                     requires_grad=True, device=device)
     conv = ConvTranspose2d(in_channels, out_channels, kernel_size, stride,
                            padding, output_padding, groups, bias, dilation, padding_mode).to(device)
-    fft_conv = FFTConvTranspose2d(in_channels, out_channels, kernel_size,
-                                  stride, padding, output_padding, groups, bias, dilation, padding_mode).to(device)
-    fft_conv.load_state_dict(conv.state_dict())
+    fft_conv = convert_fft_conv(conv)
+    assert isinstance(fft_conv, FFTConvTranspose2d)
 
     y1 = conv(x)
     y2 = fft_conv(x)
@@ -180,9 +176,8 @@ def test_conv_transpose3d(batch, length,
                     requires_grad=True, device=device)
     conv = ConvTranspose3d(in_channels, out_channels, kernel_size, stride,
                            padding, output_padding, groups, bias, dilation, padding_mode).to(device)
-    fft_conv = FFTConvTranspose3d(in_channels, out_channels, kernel_size,
-                                  stride, padding, output_padding, groups, bias, dilation, padding_mode).to(device)
-    fft_conv.load_state_dict(conv.state_dict())
+    fft_conv = convert_fft_conv(conv)
+    assert isinstance(fft_conv, FFTConvTranspose3d)
 
     y1 = conv(x)
     y2 = fft_conv(x)
