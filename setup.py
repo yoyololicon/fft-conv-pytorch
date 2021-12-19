@@ -2,7 +2,7 @@ from os import name
 import setuptools
 
 NAME = "torch_fftconv"
-VERSION = '0.1.2'
+VERSION = '0.1.3'
 MAINTAINER = 'Chin-Yun Yu'
 EMAIL = 'lolimaster.cs03@nctu.edu.tw'
 
