@@ -29,9 +29,7 @@ def test_conv1d_circular(batch, length,
                     requires_grad=True, device=device)
     conv = Conv1d(in_channels, out_channels, kernel_size, stride,
                   padding, dilation, 1, bias, 'circular').to(device)
-    fft_conv = FFTConv1d(in_channels, out_channels, kernel_size,
-                         stride, padding, dilation, 1, bias, 'circular').to(device)
-    fft_conv.load_state_dict(conv.state_dict())
+    fft_conv = convert_fft_conv(conv)
 
     y1 = conv(x)
     y2 = fft_conv(x)
@@ -57,9 +55,7 @@ def test_conv2d_circular(batch, length,
                     requires_grad=True, device=device)
     conv = Conv2d(in_channels, out_channels, kernel_size, stride,
                   padding, dilation, 1, bias, 'circular').to(device)
-    fft_conv = FFTConv2d(in_channels, out_channels, kernel_size,
-                         stride, padding, dilation, 1, bias, 'circular').to(device)
-    fft_conv.load_state_dict(conv.state_dict())
+    fft_conv = convert_fft_conv(conv)
 
     y1 = conv(x)
     y2 = fft_conv(x)
@@ -85,9 +81,7 @@ def test_conv3d_circular(batch, length,
                     requires_grad=True, device=device)
     conv = Conv3d(in_channels, out_channels, kernel_size, stride,
                   padding, dilation, 1, bias, 'circular').to(device)
-    fft_conv = FFTConv3d(in_channels, out_channels, kernel_size,
-                         stride, padding, dilation, 1, bias, 'circular').to(device)
-    fft_conv.load_state_dict(conv.state_dict())
+    fft_conv = convert_fft_conv(conv)
 
     y1 = conv(x)
     y2 = fft_conv(x)
