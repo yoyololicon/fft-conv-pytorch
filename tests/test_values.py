@@ -11,6 +11,90 @@ if torch.cuda.is_available():
     torch.backends.cudnn.allow_tf32 = False
 
 
+@pytest.mark.parametrize('batch', [8])
+@pytest.mark.parametrize('in_channels', [32])
+@pytest.mark.parametrize('out_channels', [32])
+@pytest.mark.parametrize('length', [60])
+@pytest.mark.parametrize('kernel_size', [9, 11])
+@pytest.mark.parametrize('stride', [1, 2, 3, 5])
+@pytest.mark.parametrize('dilation', [1, 2, 3, 5])
+@pytest.mark.parametrize('padding', [0, 4, 5, 10])
+@pytest.mark.parametrize('bias', [True, False])
+def test_conv1d_circular(batch, length,
+                         in_channels, out_channels,
+                         kernel_size, stride, padding, dilation, bias):
+
+    x = torch.randn(batch, in_channels, length,
+                    requires_grad=True, device=device)
+    conv = Conv1d(in_channels, out_channels, kernel_size, stride,
+                  padding, dilation, 1, bias, 'circular').to(device)
+    fft_conv = FFTConv1d(in_channels, out_channels, kernel_size,
+                         stride, padding, dilation, 1, bias, 'circular').to(device)
+    fft_conv.load_state_dict(conv.state_dict())
+
+    y1 = conv(x)
+    y2 = fft_conv(x)
+    assert torch.allclose(
+        y1, y2, atol=1e-5, rtol=1e-5), torch.abs(y1 - y2).max().item()
+    y2.sum().backward()
+
+
+@pytest.mark.parametrize('batch', [8])
+@pytest.mark.parametrize('in_channels', [16])
+@pytest.mark.parametrize('out_channels', [16])
+@pytest.mark.parametrize('length', [(72, 96)])
+@pytest.mark.parametrize('kernel_size', [17, 23])
+@pytest.mark.parametrize('stride', [1, 2, 3])
+@pytest.mark.parametrize('dilation', [1, 2, 3])
+@pytest.mark.parametrize('padding', [0, 8, 11, 22])
+@pytest.mark.parametrize('bias', [True, False])
+def test_conv2d_circular(batch, length,
+                         in_channels, out_channels,
+                         kernel_size, stride, padding, dilation, bias):
+
+    x = torch.randn(batch, in_channels, *length,
+                    requires_grad=True, device=device)
+    conv = Conv2d(in_channels, out_channels, kernel_size, stride,
+                  padding, dilation, 1, bias, 'circular').to(device)
+    fft_conv = FFTConv2d(in_channels, out_channels, kernel_size,
+                         stride, padding, dilation, 1, bias, 'circular').to(device)
+    fft_conv.load_state_dict(conv.state_dict())
+
+    y1 = conv(x)
+    y2 = fft_conv(x)
+    assert torch.allclose(
+        y1, y2, atol=1e-5, rtol=1e-5), torch.abs(y1 - y2).max().item()
+    y2.sum().backward()
+
+
+@pytest.mark.parametrize('batch', [8])
+@pytest.mark.parametrize('in_channels', [8])
+@pytest.mark.parametrize('out_channels', [8])
+@pytest.mark.parametrize('length', [(48, 48, 48)])
+@pytest.mark.parametrize('kernel_size', [11])
+@pytest.mark.parametrize('stride', [1, 2, 3])
+@pytest.mark.parametrize('dilation', [1, 3])
+@pytest.mark.parametrize('padding', [0, 6, 8, 16])
+@pytest.mark.parametrize('bias', [True, False])
+def test_conv3d_circular(batch, length,
+                         in_channels, out_channels,
+                         kernel_size, stride, padding, dilation, bias):
+
+    x = torch.randn(batch, in_channels, *length,
+                    requires_grad=True, device=device)
+    conv = Conv3d(in_channels, out_channels, kernel_size, stride,
+                  padding, dilation, 1, bias, 'circular').to(device)
+    fft_conv = FFTConv3d(in_channels, out_channels, kernel_size,
+                         stride, padding, dilation, 1, bias, 'circular').to(device)
+    fft_conv.load_state_dict(conv.state_dict())
+
+    y1 = conv(x)
+    y2 = fft_conv(x)
+    assert torch.allclose(
+        y1, y2, atol=1e-5, rtol=1e-5), torch.abs(y1 - y2).max().item()
+    y2.sum().backward()
+
+
 @pytest.mark.parametrize('batch', [1, 4])
 @pytest.mark.parametrize('in_channels', [16, 64])
 @pytest.mark.parametrize('out_channels', [8, 32])
