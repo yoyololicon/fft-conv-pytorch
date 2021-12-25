@@ -18,7 +18,7 @@ def _check_circular_optimize(input_shape: tuple, kernel_shape: tuple, stride: tu
     for i in range(len(input_shape)):
         if input_shape[i] % stride[i] or input_shape[i] % dilation[i] or kernel_shape[i] * dilation[i] > input_shape[i]:
             return False
-    return input_shape[-1] % 2 == 0
+    return (input_shape[-1] // stride[-1]) % 2 == 0 and (input_shape[-1] // dilation[-1]) % 2 == 0
 
 
 def _circular_fft_convnd(input: Tensor,
@@ -110,7 +110,6 @@ def _circular_fft_convnd(input: Tensor,
             output = output[idx + (slice(0, output_size[i - 2]),)]
         idx = (slice(None),) + idx
 
-    # Optionally, add a bias term before returning.
     if bias is not None:
         output += bias[(slice(None),) + (None,) * (output.ndim - 2)]
 
@@ -132,6 +131,9 @@ class FFTConv1d(nn.Conv1d):
 
 class FFTConv2d(nn.Conv2d):
     def forward(self, input: Tensor) -> Tensor:
+        if self.padding_mode == 'circular' and _check_circular_optimize(input.shape[2:], self.weight.shape[2:], self.stride, self.dilation):
+            return _circular_fft_convnd(input, self.weight, self.bias, self.stride, self.dilation, self.padding, self.groups)
+
         if self.padding_mode != 'zeros':
             return fft_conv2d(F.pad(input, self._reversed_padding_repeated_twice, mode=self.padding_mode),
                               self.weight, self.bias, self.stride, _pair(0),
@@ -142,6 +144,9 @@ class FFTConv2d(nn.Conv2d):
 
 class FFTConv3d(nn.Conv3d):
     def forward(self, input: Tensor) -> Tensor:
+        if self.padding_mode == 'circular' and _check_circular_optimize(input.shape[2:], self.weight.shape[2:], self.stride, self.dilation):
+            return _circular_fft_convnd(input, self.weight, self.bias, self.stride, self.dilation, self.padding, self.groups)
+
         if self.padding_mode != 'zeros':
             return fft_conv3d(F.pad(input, self._reversed_padding_repeated_twice, mode=self.padding_mode),
                               self.weight, self.bias, self.stride, _triple(0),
