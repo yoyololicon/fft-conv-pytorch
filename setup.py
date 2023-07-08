@@ -19,7 +19,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/yoyololicon/fft-conv-pytorch",
-    packages=setuptools.find_packages(),
+    packages=["torch_fftconv"],
     install_requires=['torch>=1.7.0'],
     classifiers=[
         "Programming Language :: Python :: 3",
